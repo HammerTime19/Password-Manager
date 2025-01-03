@@ -1,0 +1,128 @@
+1) IMPORTING REQUIRED LIBRARIES
+import os
+import json
+from cryptography.fernet import Fernet
+from getpass import getpass
+
+os: Provides functions to interact with the operating system (e.g., checking if files exist).
+json: Used for reading and writing JSON data (in this case, to store passwords).
+cryptography.fernet.Fernet: A module for encryption/decryption. Fernet is an implementation of symmetric encryption, meaning the same key is used to encrypt and decrypt data.
+getpass: Used to securely prompt the user for a password without showing the input.
+
+2) KEY GENERATION & LOADING
+def generate_key():
+    """Generates an encryption key and saves it to 'key.key'."""
+    key = Fernet.generate_key()
+    with open("key.key", "wb") as key_file:
+        key_file.write(key)
+
+def load_key():
+    """Loads the encryption key from 'key.key'."""
+    return open("key.key", "rb").read()
+
+if not os.path.exists("key.key"):
+    generate_key()
+
+key = load_key()
+cipher = Fernet(key)  # Creates a cipher object for encryption/decryption
+
+generate_key(): This function generates a random encryption key using Fernet.generate_key() and saves it to a file called key.key. This key will be used to encrypt and decrypt the passwords.
+load_key(): This function loads the encryption key from the key.key file. If the file doesn't exist, the program will generate it.
+cipher: This creates a Fernet cipher object, which can be used to encrypt and decrypt data using the loaded encryption key.
+
+3) SAVING PASSWORDS SECURELY
+def save_password(service, username, password):
+    """Encrypts and stores the password securely in a JSON file."""
+    encrypted_password = cipher.encrypt(password.encode())  # Encrypt password
+    data = {service: {"username": username, "password": encrypted_password.decode()}}  # Store encrypted data
+
+    # Check if file exists and load existing data
+    if os.path.exists("passwords.json"):
+        with open("passwords.json", "r") as file:
+            passwords = json.load(file)
+    else:
+        passwords = {}
+
+    # Update the password list
+    passwords.update(data)
+
+    # Save back to JSON
+    with open("passwords.json", "w") as file:
+        json.dump(passwords, file, indent=4)
+
+    print(f"Password for {service} saved securely.")
+
+encrypting the password: The password is encrypted using cipher.encrypt(password.encode()). The password.encode() converts the password into a byte format (necessary for encryption). cipher.encrypt() returns the encrypted data.
+Storing encrypted data: A dictionary data is created where the service name is the key, and it holds the username and encrypted password.
+Checking if the passwords.json file exists: If it exists, it loads the existing data into the passwords dictionary. Otherwise, it initializes an empty dictionary.
+Saving passwords: The updated password data is written back to the passwords.json file using json.dump(). The file is indented to make it more readable.
+
+4) RETRIEVING AND DECRYPTING PASSWORDS
+def get_password(service):
+    """Retrieves and decrypts a password for the given service."""
+    if not os.path.exists("passwords.json"):
+        print("No passwords saved yet.")
+        return
+
+    # Load the saved passwords from the JSON file
+    with open("passwords.json", "r") as file:
+        passwords = json.load(file)
+
+    # Check if the service exists in the saved passwords
+    if service in passwords:
+        encrypted_password = passwords[service]["password"]
+        # Decrypt the password
+        decrypted_password = cipher.decrypt(encrypted_password.encode()).decode()
+        
+        # Print the service details
+        print(f"Service: {service}")
+        print(f"Username: {passwords[service]['username']}")
+        print(f"Password: {decrypted_password}")
+    else:
+        print("Service not found.")
+
+Check for saved passwords: If the passwords.json file doesn't exist, it prints a message saying no passwords are saved.
+Loading saved passwords: The passwords are loaded from the passwords.json file into the passwords dictionary.
+Checking for the service: The function checks if the provided service name exists in the saved passwords.
+Decrypting the password: If the service exists, it retrieves the encrypted password, decrypts it using cipher.decrypt(), and decodes it back into a string.
+Displaying password details: The decrypted password, along with the service name and username, is displayed on the screen.
+
+5) Main Function - User Interface
+def main():
+    print("Simple Password Manager")
+    while True:
+        # Display options to the user
+        print("\nOptions:")
+        print("1: Save a new password")
+        print("2: Retrieve a password")
+        print("3: Exit")
+        choice = input("Enter choice: ")
+
+        if choice == "1":
+            # Get user input to save a new password
+            service = input("Enter service name: ")
+            username = input("Enter username: ")
+            password = getpass("Enter password: ")  # Hides input for security
+            save_password(service, username, password)
+        elif choice == "2":
+            # Get user input to retrieve a password
+            service = input("Enter service name: ")
+            get_password(service)
+        elif choice == "3":
+            # Exit the program
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice, try again.")
+
+Menu system: The main() function is a simple loop that displays options to the user:
+Option 1: Save a new password. The user is prompted to input the service name, username, and password, which are then passed to the save_password() function.
+Option 2: Retrieve an existing password. The user is prompted for the service name, and the get_password() function is called to display the stored password.
+Option 3: Exit the program by breaking out of the loop.
+getpass() function: This function is used to securely input the password (it hides the input, so the password isn't shown in the terminal).
+
+6) PROGRAM EXECUTION
+if __name__ == "__main__":
+    main()
+
+if __name__ == "__main__": This ensures that the main() function runs when the script is executed directly (rather than being imported as a module). If the script is imported, main() will not run automatically.
