@@ -1,0 +1,5 @@
+Summary of the Workflow:
+Encryption Key Generation: A key is generated and stored if it doesn't already exist. This key is used for encrypting and decrypting passwords.
+Saving Passwords: When the user opts to save a password, it gets encrypted and saved in a JSON file.
+Retrieving Passwords: When the user opts to retrieve a password, the encrypted password is decrypted and displayed alongside the associated service name and username.
+User Interface: The program runs a simple loop that lets users choose whether to save a password, retrieve a password, or exit the program.
