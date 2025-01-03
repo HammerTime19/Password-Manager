@@ -1,0 +1,119 @@
+import os
+import json
+from cryptography.fernet import Fernet
+from getpass import getpass
+
+# Generate and load encryption key
+def generate_key():
+    """Generates an encryption key and saves it to 'key.key'."""
+    key = Fernet.generate_key()
+    with open("key.key", "wb") as key_file:
+        key_file.write(key)
+
+def load_key():
+    """Loads the encryption key from 'key.key'."""
+    return open("key.key", "rb").read()
+
+# Check if key exists; if not, generate one
+if not os.path.exists("key.key"):
+    generate_key()
+
+# Load the encryption key
+key = load_key()
+cipher = Fernet(key)  # Creates a cipher object for encryption/decryption
+
+# Function to save passwords securely
+def save_password(service, username, password):
+    """Encrypts and stores the password securely in a JSON file."""
+    encrypted_password = cipher.encrypt(password.encode())  # Encrypt password
+    data = {service: {"username": username, "password": encrypted_password.decode()}}  # Store encrypted data
+
+    # Check if file exists and load existing data
+    if os.path.exists("passwords.json"):
+        with open("passwords.json", "r") as file:
+            passwords = json.load(file)
+    else:
+        passwords = {}
+
+    # Update the password list
+    passwords.update(data)
+
+    # Save back to JSON
+    with open("passwords.json", "w") as file:
+        json.dump(passwords, file, indent=4)
+
+    print(f"Password for {service} saved securely.")
+
+# Function to retrieve and decrypt passwords
+def get_password(service):
+    """Retrieves and decrypts a password for the given service."""
+    if not os.path.exists("passwords.json"):
+        print("No passwords saved yet.")
+        return
+
+    # Load the saved passwords from the JSON file
+    with open("passwords.json", "r") as file:
+        passwords = json.load(file)
+
+    # Check if the service exists in the saved passwords
+    if service in passwords:
+        encrypted_password = passwords[service]["password"]
+        # Decrypt the password
+        decrypted_password = cipher.decrypt(encrypted_password.encode()).decode()
+        
+        # Print the service details
+        print(f"Service: {service}")
+        print(f"Username: {passwords[service]['username']}")
+        print(f"Password: {decrypted_password}")
+    else:
+        print("Service not found.")
+
+# Main function with options
+def main():
+    print("Simple Password Manager")
+    while True:
+        # Display options to the user
+        print("\nOptions:")
+        print("1: Save a new password")
+        print("2: Retrieve a password")
+        print("3: Exit")
+        choice = input("Enter choice: ")
+
+        if choice == "1":
+            # Get user input to save a new password
+            service = input("Enter service name: ")
+            username = input("Enter username: ")
+            password = getpass("Enter password: ")  # Hides input for security
+            save_password(service, username, password)
+        elif choice == "2":
+            # Get user input to retrieve a password
+            service = input("Enter service name: ")
+            get_password(service)
+        elif choice == "3":
+            # Exit the program
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice, try again.")
+
+if __name__ == "__main__":
+    main()
+if __name__ == "__main__":
+    print("Options:")
+    print("1: Save a new password")
+    print("2: Retrieve a saved password")
+    choice = input("Choose an option (1 or 2): ")
+
+    if choice == "1":
+        service = input("Enter service name: ")
+        username = input("Enter username: ")
+        password = getpass("Enter password: ")  # Hides input for security
+        save_password(service, username, password)
+    elif choice == "2":
+        service = input("Enter service name: ")
+        get_password(service)
+    elif choice == "3":
+        print("Goodbye!")
+    else:
+        print("Invalid option. Exiting.")
+
